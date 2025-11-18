@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type, Modality, GenerateContentResponse } from "@google/genai";
 import { NewsArticle, LaunchDate } from '../types';
 
@@ -61,16 +60,19 @@ class ApiKeyManager {
     private currentIndex: number;
 
     constructor() {
-        // Safely access env vars
-        const keyPool = process.env.GEMINI_API_KEY_POOL;
-        const singleKey = process.env.API_KEY;
         const allKeys = new Set<string>();
 
-        if (keyPool) {
-            keyPool.split(',').map(k => k.trim()).filter(Boolean).forEach(k => allKeys.add(k));
+        // Safely check if the variable exists before accessing or splitting
+        // @ts-ignore
+        if (typeof process !== 'undefined' && process.env.GEMINI_API_KEY_POOL) {
+             // @ts-ignore
+            process.env.GEMINI_API_KEY_POOL.split(',').map(k => k.trim()).filter(Boolean).forEach(k => allKeys.add(k));
         }
-        if (singleKey) {
-             allKeys.add(singleKey.trim());
+        
+        // @ts-ignore
+        if (typeof process !== 'undefined' && process.env.API_KEY) {
+             // @ts-ignore
+             allKeys.add(process.env.API_KEY.trim());
         }
         
         this.keys = Array.from(allKeys);
@@ -92,7 +94,6 @@ class ApiKeyManager {
         if (this.keys.length === 0) {
             return;
         }
-        // Shuffle on each new rotation request to distribute load
         this.shuffleKeys();
         const maxAttempts = this.keys.length;
         for (let i = 0; i < maxAttempts; i++) {
@@ -168,7 +169,6 @@ const processApiResponse = (response: any, articles: any[]): NewsArticle[] => {
 
 export const fetchTechNews = async (forceRefresh = false): Promise<NewsArticle[] | null> => {
     const cacheKey = 'techNews';
-    // Immediate cache check
     if (!forceRefresh) {
         const cachedArticles = cache.get(cacheKey, NEWS_CACHE_TTL_MS) as NewsArticle[] | null;
         if (cachedArticles) return cachedArticles;
@@ -211,7 +211,7 @@ export const fetchTechNews = async (forceRefresh = false): Promise<NewsArticle[]
             return null; 
         }
     }
-    console.error("All API keys are rate-limited. Falling back to static news.", lastError);
+    console.error("All API keys are rate-limited or failed. Falling back to static news.", lastError);
     isApiInCooldown = true;
     cooldownEndTime = Date.now() + COOLDOWN_MS;
     return null;
@@ -287,7 +287,7 @@ export const fetchUpcomingLaunches = async (forceRefresh = false): Promise<Launc
 };
 
 export const generateSpeech = async (text: string): Promise<string | null> => {
-    const cacheKey = `speech:${text.slice(0, 50)}`; // Shorten key for safety
+    const cacheKey = `speech:${text.slice(0, 50)}`; 
     const cachedSpeech = cache.get(cacheKey, SPEECH_CACHE_TTL_MS) as string | null;
     if (cachedSpeech) return cachedSpeech;
 

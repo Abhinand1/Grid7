@@ -1,4 +1,3 @@
-
 // --- React and Google GenAI Imports ---
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
@@ -836,6 +835,8 @@ interface NewsModalProps {
     onClose: () => void;
 }
 const NewsModal: React.FC<NewsModalProps> = ({ article, onClose }) => {
+    // (Same component code as src/components/NewsModal.tsx but inlined)
+    // Converting to JSX to fix the React.createElement(React.Fragment... issue reported in NewsModal.tsx which is copy-pasted here)
     const getCategoryTagStyle = (category: string) => {
         switch (category) {
             case 'AI': return 'bg-violet-500/10 text-violet-400 ring-1 ring-inset ring-violet-500/20';
@@ -844,7 +845,6 @@ const NewsModal: React.FC<NewsModalProps> = ({ article, onClose }) => {
             default: return 'bg-gray-500/10 text-gray-400 ring-1 ring-inset ring-gray-500/20';
         }
     };
-
     const getCategoryShadowStyle = (category: string) => {
         switch (category) {
             case 'AI': return 'shadow-violet-900/20';
@@ -855,148 +855,68 @@ const NewsModal: React.FC<NewsModalProps> = ({ article, onClose }) => {
     };
     
     const relativeTime = useRelativeTime(article?.timestamp || new Date().toISOString());
-
     useEffect(() => {
-        const handleEsc = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                onClose();
-            }
-        };
+        const handleEsc = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
         window.addEventListener('keydown', handleEsc);
-
-        return () => {
-            window.removeEventListener('keydown', handleEsc);
-        };
+        return () => window.removeEventListener('keydown', handleEsc);
     }, [onClose]);
-
-    if (!article) {
-        return null;
-    }
+    if (!article) return null;
 
     const handleShare = async () => {
-        let urlToShare = window.location.href; // Default to a known valid URL
+        let urlToShare = window.location.href;
         const sourceUri = article.groundingSources?.[0]?.uri;
-
         if (sourceUri) {
             try {
                 const parsedUrl = new URL(sourceUri);
-                if (['http:', 'https:'].includes(parsedUrl.protocol)) {
-                    urlToShare = parsedUrl.href;
-                } else {
-                     console.warn(`Unsupported protocol for sharing: "${parsedUrl.protocol}". Falling back to the main app URL.`);
-                }
-            } catch (err) {
-                console.warn(`Invalid source URL provided for sharing: "${sourceUri}". Falling back to the main app URL.`);
-            }
+                if (['http:', 'https:'].includes(parsedUrl.protocol)) urlToShare = parsedUrl.href;
+            } catch (err) { }
         }
-        
-        const shareData = {
-            title: article.headline,
-            text: article.summary,
-            url: urlToShare,
-        };
-
+        const shareData = { title: article.headline, text: article.summary, url: urlToShare };
         try {
-            if (navigator.share) {
-                await navigator.share(shareData);
-            } else {
-                await navigator.clipboard.writeText(`${article.headline}\n\n${urlToShare}`);
-                alert('Article link copied to clipboard!');
-            }
-        } catch (err) {
-            if (err instanceof Error && err.name === 'AbortError') {
-                 // Silently ignore user cancellation of the share dialog.
-            } else {
-                console.error('Error sharing:', err);
-                alert('Could not share article.');
-            }
-        }
+            if (navigator.share) await navigator.share(shareData);
+            else { await navigator.clipboard.writeText(`${article.headline}\n\n${urlToShare}`); alert('Article link copied to clipboard!'); }
+        } catch (err) { }
     };
-
     const sourceLink = article.groundingSources?.[0]?.uri;
 
     return (
-        React.createElement("div", { 
-            className: "fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4",
-            onClick: onClose
-        },
-            React.createElement("div", { 
-                className: `bg-[#111] border border-gray-800 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col ${getCategoryShadowStyle(article.category)}`,
-                onClick: (e) => e.stopPropagation()
-            },
-                React.createElement("div", { className: "p-6 md:p-8 flex-shrink-0" },
-                    React.createElement("div", { className: "flex justify-between items-start mb-4" },
-                        React.createElement("div", { className: "flex-1" },
-                             React.createElement("div", { className: "flex items-center flex-wrap gap-x-3 gap-y-1 mb-2" },
-                                React.createElement("span", { className: "text-sm font-semibold text-cyan-400 uppercase tracking-wider" }, article.source),
-                                React.createElement("span", { className: `text-xs font-bold px-2 py-1 rounded-full ${getCategoryTagStyle(article.category)}` },
-                                    article.category
-                                ),
-                                React.createElement("span", { className: "text-xs text-gray-500" }, relativeTime)
-                            ),
-                            React.createElement("h1", { className: "text-2xl md:text-3xl font-bold text-white" },
-                                article.headline
-                            )
-                        ),
-                        React.createElement("button", { onClick: onClose, className: "text-gray-500 hover:text-white transition-colors ml-4" },
-                            React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-7 w-7", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor" },
-                                React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M6 18L18 6M6 6l12 12" })
-                            )
-                        )
-                    )
-                ),
-                
-                React.createElement("div", { className: "overflow-y-auto px-6 md:px-8" },
-                    React.createElement("div", { className: "space-y-4 text-gray-300" },
-                        React.createElement("p", { className: "font-semibold text-gray-200" }, article.summary),
-                        React.createElement("p", { className: "whitespace-pre-wrap" }, article.fullArticle)
-                    ),
-
-                    article.groundingSources && article.groundingSources.length > 0 && (
-                        React.createElement("div", { className: "mt-6 pt-4 border-t border-gray-800" },
-                            React.createElement("h3", { className: "text-sm font-semibold text-gray-400 mb-3" }, "Sources:"),
-                            React.createElement("ul", { className: "space-y-2" },
-                                article.groundingSources.map((source, index) => (
-                                    React.createElement("li", { key: index },
-                                        React.createElement("a", { 
-                                            href: source.uri, 
-                                            target: "_blank", 
-                                            rel: "noopener noreferrer",
-                                            className: "text-cyan-500 hover:text-cyan-400 text-xs transition-colors line-clamp-1",
-                                            title: source.title
-                                        },
-                                            source.title || source.uri
-                                        )
-                                    )
-                                ))
-                            )
-                        )
-                    )
-                ),
-
-                React.createElement("div", { className: "mt-6 p-6 md:p-8 border-t border-gray-800 flex-shrink-0 flex items-center justify-end gap-4" },
-                    sourceLink && (
-                         React.createElement("a", { 
-                            href: sourceLink, 
-                            target: "_blank", 
-                            rel: "noopener noreferrer",
-                            className: "bg-gray-800 text-cyan-400 font-semibold px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-                        },
-                            "Read Full Article"
-                        )
-                    ),
-                    React.createElement("button", { 
-                        onClick: handleShare,
-                        className: "bg-cyan-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-cyan-500 transition-colors flex items-center gap-2"
-                    },
-                        React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-5 w-5", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 },
-                            React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.368a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" })
-                        ),
-                        "Share"
-                    )
-                )
-            )
-        )
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4" onClick={onClose}>
+            <div className={`bg-[#111] border border-gray-800 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col ${getCategoryShadowStyle(article.category)}`} onClick={(e) => e.stopPropagation()}>
+                <div className="p-6 md:p-8 flex-shrink-0">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                             <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mb-2">
+                                <span className="text-sm font-semibold text-cyan-400 uppercase tracking-wider">{article.source}</span>
+                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${getCategoryTagStyle(article.category)}`}>
+                                    {article.category}
+                                </span>
+                                <span className="text-xs text-gray-500">{relativeTime}</span>
+                            </div>
+                            <h1 className="text-2xl md:text-3xl font-bold text-white">{article.headline}</h1>
+                        </div>
+                        <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors ml-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+                </div>
+                <div className="overflow-y-auto px-6 md:px-8">
+                    <div className="space-y-4 text-gray-300"><p className="font-semibold text-gray-200">{article.summary}</p><p className="whitespace-pre-wrap">{article.fullArticle}</p></div>
+                    {article.groundingSources && article.groundingSources.length > 0 && (
+                        <div className="mt-6 pt-4 border-t border-gray-800">
+                            <h3 className="text-sm font-semibold text-gray-400 mb-3">Sources:</h3>
+                            <ul className="space-y-2">{article.groundingSources.map((source, index) => (<li key={index}><a href={source.uri} target="_blank" rel="noopener noreferrer" className="text-cyan-500 hover:text-cyan-400 text-xs transition-colors line-clamp-1" title={source.title}>{source.title || source.uri}</a></li>))}</ul>
+                        </div>
+                    )}
+                </div>
+                <div className="mt-6 p-6 md:p-8 border-t border-gray-800 flex-shrink-0 flex items-center justify-end gap-4">
+                    {sourceLink && (<a href={sourceLink} target="_blank" rel="noopener noreferrer" className="bg-gray-800 text-cyan-400 font-semibold px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">Read Full Article</a>)}
+                    <button onClick={handleShare} className="bg-cyan-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-cyan-500 transition-colors flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.368a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" /></svg>
+                        Share
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -1064,140 +984,54 @@ const NewsletterModal: React.FC<NewsletterModalProps> = ({ isOpen, onClose, arti
     const [emailBody, setEmailBody] = useState<string | undefined>(undefined);
 
     useEffect(() => {
-        const handleEsc = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                onClose();
-            }
-        };
-        if (isOpen) {
-            window.addEventListener('keydown', handleEsc);
-        }
-
-        return () => {
-            window.removeEventListener('keydown', handleEsc);
-        };
+        const handleEsc = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
+        if (isOpen) window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
     }, [isOpen, onClose]);
     
     useEffect(() => {
-        if (isOpen) {
-            setStatus('idle');
-            setEmail('');
-            setMessage('');
-            setEmailBody(undefined);
-        }
+        if (isOpen) { setStatus('idle'); setEmail(''); setMessage(''); setEmailBody(undefined); }
     }, [isOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email || status === 'loading') return;
-
-        setStatus('loading');
-        setMessage('');
-
+        setStatus('loading'); setMessage('');
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            setStatus('error');
-            setMessage('Please enter a valid email address.');
-            return;
-        }
-
+        if (!emailRegex.test(email)) { setStatus('error'); setMessage('Please enter a valid email address.'); return; }
         const result = await subscribeToNewsletter(email, articles);
-
-        if (result.success) {
-            setStatus('success');
-            setMessage(result.message);
-            setEmailBody(result.emailBody);
-        } else {
-            setStatus('error');
-            setMessage(result.message);
-            setEmailBody(undefined);
-        }
+        if (result.success) { setStatus('success'); setMessage(result.message); setEmailBody(result.emailBody); } 
+        else { setStatus('error'); setMessage(result.message); setEmailBody(undefined); }
     };
 
-    if (!isOpen) {
-        return null;
-    }
+    if (!isOpen) return null;
 
     return (
-        React.createElement("div", { 
-            className: "fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4",
-            onClick: onClose
-        },
-            React.createElement("div", { 
-                className: "bg-[#111] border border-gray-800 rounded-lg shadow-2xl max-w-md w-full p-8",
-                onClick: (e) => e.stopPropagation()
-            },
-                React.createElement("div", { className: "flex justify-between items-start mb-4" },
-                    React.createElement("div", { className: "flex items-center gap-3" },
-                        React.createElement("div", { className: "p-2 bg-gray-800 rounded-full" },
-                           React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-6 w-6 text-cyan-400", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 },
-                                React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" })
-                           )
-                        ),
-                        React.createElement("div", null,
-                            React.createElement("h2", { className: "text-xl font-bold text-white" }, "Subscribe to Grid7 Weekly"),
-                            React.createElement("p", { className: "text-sm text-gray-400" }, "Get the biggest tech stories delivered to your inbox.")
-                        )
-                    ),
-                    React.createElement("button", { onClick: onClose, className: "text-gray-500 hover:text-white transition-colors ml-4 p-1 -mt-2 -mr-2" },
-                        React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-6 w-6", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor" },
-                            React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M6 18L18 6M6 6l12 12" })
-                        )
-                    )
-                ),
-
-                status !== 'success' ? (
-                     React.createElement("form", { onSubmit: handleSubmit, className: "mt-6 space-y-4" },
-                        React.createElement("div", null,
-                            React.createElement("label", { htmlFor: "email-address", className: "sr-only" }, "Email address"),
-                            React.createElement("input", {
-                                id: "email-address",
-                                name: "email",
-                                type: "email",
-                                autoComplete: "email",
-                                required: true,
-                                value: email,
-                                onChange: (e) => setEmail(e.target.value),
-                                className: "appearance-none relative block w-full px-3 py-3 border border-gray-700 bg-gray-900 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm",
-                                placeholder: "Enter your email"
-                            })
-                        ),
-                         status === 'error' && React.createElement("p", { className: "text-sm text-red-400" }, message),
-                        React.createElement("div", null,
-                            React.createElement("button", {
-                                type: "submit",
-                                disabled: status === 'loading',
-                                className: "group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-wait"
-                            },
-                                status === 'loading' ? 'Subscribing...' : 'Subscribe'
-                            )
-                        )
-                    )
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4" onClick={onClose}>
+            <div className="bg-[#111] border border-gray-800 rounded-lg shadow-2xl max-w-md w-full p-8" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gray-800 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg></div>
+                        <div><h2 className="text-xl font-bold text-white">Subscribe to Grid7 Weekly</h2><p className="text-sm text-gray-400">Get the biggest tech stories delivered to your inbox.</p></div>
+                    </div>
+                    <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors ml-4 p-1 -mt-2 -mr-2"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+                </div>
+                {status !== 'success' ? (
+                     <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+                        <div><label htmlFor="email-address" className="sr-only">Email address</label><input id="email-address" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="appearance-none relative block w-full px-3 py-3 border border-gray-700 bg-gray-900 text-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm" placeholder="Enter your email" /></div>
+                         {status === 'error' && <p className="text-sm text-red-400">{message}</p>}
+                        <div><button type="submit" disabled={status === 'loading'} className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-wait">{status === 'loading' ? 'Subscribing...' : 'Subscribe'}</button></div>
+                    </form>
                 ) : (
-                    React.createElement("div", { className: "mt-6 text-left" },
-                        React.createElement("h3", { className: "text-lg font-semibold text-emerald-400 text-center" }, "All Set!"),
-                        React.createElement("p", { className: "text-gray-300 mt-2 text-center mb-6" }, message),
-                        
-                        emailBody && (
-                             React.createElement("div", { className: "bg-gray-900 border border-gray-700 rounded-lg p-4 max-h-60 overflow-y-auto font-mono text-sm" },
-                                React.createElement("p", { className: "text-gray-500" }, "To: ", React.createElement("span", { className: "text-gray-300" }, email)),
-                                React.createElement("p", { className: "text-gray-500 mb-3" }, "Subject: ", React.createElement("span", { className: "text-gray-300" }, "Welcome to Grid7 Weekly!")),
-                                React.createElement("div", { className: "border-t border-gray-700 pt-3" },
-                                    React.createElement("p", { className: "text-gray-300 whitespace-pre-wrap" }, emailBody)
-                                )
-                            )
-                        ),
-
-                        React.createElement("button", {
-                            onClick: onClose,
-                            className: "mt-6 w-full bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
-                        },
-                            "Close"
-                        )
-                    )
-                )
-            )
-        )
+                    <div className="mt-6 text-left">
+                        <h3 className="text-lg font-semibold text-emerald-400 text-center">All Set!</h3>
+                        <p className="text-gray-300 mt-2 text-center mb-6">{message}</p>
+                        {emailBody && (<div className="bg-gray-900 border border-gray-700 rounded-lg p-4 max-h-60 overflow-y-auto font-mono text-sm"><p className="text-gray-500">To: <span className="text-gray-300">{email}</span></p><p className="text-gray-500 mb-3">Subject: <span className="text-gray-300">Welcome to Grid7 Weekly!</span></p><div className="border-t border-gray-700 pt-3"><p className="text-gray-300 whitespace-pre-wrap">{emailBody}</p></div></div>)}
+                        <button onClick={onClose} className="mt-6 w-full bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">Close</button>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 };
 
@@ -1399,41 +1233,41 @@ const App = () => {
 
         if (activeCategory === 'news') {
             return (
-                React.createElement(React.Fragment, null,
-                    React.createElement("div", { className: "mb-6 flex flex-wrap items-center gap-3" },
-                        newsCategories.map(category => (
-                            React.createElement("button", {
-                                key: category,
-                                onClick: () => setActiveNewsCategory(category),
-                                className: `flex items-center gap-2 px-4 py-1.5 text-sm font-semibold rounded-full transition-all duration-300 transform hover:scale-105 ${
+                <React.Fragment>
+                    <div className="mb-6 flex flex-wrap items-center gap-3">
+                        {newsCategories.map(category => (
+                            <button
+                                key={category}
+                                onClick={() => setActiveNewsCategory(category)}
+                                className={`flex items-center gap-2 px-4 py-1.5 text-sm font-semibold rounded-full transition-all duration-300 transform hover:scale-105 ${
                                     getCategoryChipStyle(category, activeNewsCategory === category)
-                                }`
-                            },
-                                CategoryIcons[category],
-                                React.createElement("span", null, category)
-                            )
-                        ))
-                    ),
-                    React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6" },
-                        articlesToShow.map((article) => (
-                            React.createElement(NewsCard, { 
-                                key: article.id, 
-                                article: article, 
-                                onCardClick: () => handleSelectArticle(article),
-                                onPlayAudio: () => handlePlayAudio(article),
-                                isPlaying: audioPlayingArticleId === article.id,
-                                isLoadingAudio: audioLoadingArticleId === article.id
-                            })
-                        ))
-                    ),
-                    visibleArticleCount < filteredArticles.length && (
-                        React.createElement("div", { className: "mt-8 text-center" },
-                            React.createElement("button", { onClick: handleLoadMore, className: "bg-gray-800 text-cyan-400 font-semibold px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors" },
-                                "Load More"
-                            )
-                        )
-                    )
-                )
+                                }`}
+                            >
+                                {CategoryIcons[category]}
+                                <span>{category}</span>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                        {articlesToShow.map((article) => (
+                            <NewsCard 
+                                key={article.id} 
+                                article={article} 
+                                onCardClick={() => handleSelectArticle(article)}
+                                onPlayAudio={() => handlePlayAudio(article)}
+                                isPlaying={audioPlayingArticleId === article.id}
+                                isLoadingAudio={audioLoadingArticleId === article.id}
+                            />
+                        ))}
+                    </div>
+                    {visibleArticleCount < filteredArticles.length && (
+                        <div className="mt-8 text-center">
+                            <button onClick={handleLoadMore} className="bg-gray-800 text-cyan-400 font-semibold px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors">
+                                Load More
+                            </button>
+                        </div>
+                    )}
+                </React.Fragment>
             );
         }
 
@@ -1444,27 +1278,27 @@ const App = () => {
     };
 
     return (
-        React.createElement(React.Fragment, null,
-            React.createElement(SplashScreen, { isVisible: showSplash }),
-            React.createElement("div", { className: `min-h-screen text-white bg-[linear-gradient(to_right,rgba(26,26,26,0.8)_1px,transparent_1px),linear-gradient(to_bottom,rgba(26,26,26,0.8)_1px,transparent_1px)] bg-[size:2rem_2rem] animated-bg ${showSplash ? 'opacity-0' : 'opacity-100 transition-opacity duration-500'}` },
-                React.createElement(Header, { 
-                    activeCategory: activeCategory, 
-                    onCategoryChange: handleCategoryChange,
-                    onRefresh: handleRefresh,
-                    isRefreshing: isRefreshing,
-                    onNewsletterClick: () => setIsNewsletterModalOpen(true)
-                }),
-                React.createElement("main", { className: "p-4 md:p-8" },
-                    renderContent()
-                ),
-                React.createElement(NewsModal, { article: selectedArticle, onClose: handleCloseModal }),
-                React.createElement(NewsletterModal, { 
-                    isOpen: isNewsletterModalOpen, 
-                    onClose: () => setIsNewsletterModalOpen(false),
-                    articles: articles
-                })
-            )
-        )
+        <React.Fragment>
+            <SplashScreen isVisible={showSplash} />
+            <div className={`min-h-screen text-white bg-[linear-gradient(to_right,rgba(26,26,26,0.8)_1px,transparent_1px),linear-gradient(to_bottom,rgba(26,26,26,0.8)_1px,transparent_1px)] bg-[size:2rem_2rem] animated-bg ${showSplash ? 'opacity-0' : 'opacity-100 transition-opacity duration-500'}`}>
+                <Header 
+                    activeCategory={activeCategory} 
+                    onCategoryChange={handleCategoryChange}
+                    onRefresh={handleRefresh}
+                    isRefreshing={isRefreshing}
+                    onNewsletterClick={() => setIsNewsletterModalOpen(true)}
+                />
+                <main className="p-4 md:p-8">
+                    {renderContent()}
+                </main>
+                <NewsModal article={selectedArticle} onClose={handleCloseModal} />
+                <NewsletterModal 
+                    isOpen={isNewsletterModalOpen} 
+                    onClose={() => setIsNewsletterModalOpen(false)}
+                    articles={articles}
+                />
+            </div>
+        </React.Fragment>
     );
 };
 
